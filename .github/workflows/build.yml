@@ -17,7 +17,7 @@ jobs:
     name: Build and push docker image
     runs-on: ubuntu-latest
     env:
-      MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
+      MAVEN_OPTIONS: "--quiet --batch-mode --no-transfer-progress"
 
     steps:
     - name: Checkout repository
@@ -36,20 +36,20 @@ jobs:
     - name: Prepare version and docker tags
       id: prep
       run: |
-        CURRENT_VERSION="$(mvn ${MAVEN_OPTIONS} help:evaluate -Dexpression=project.version -q -DforceStdout)"
-        NEXT_VERSION="$(mvn ${MAVEN_OPTIONS} build-helper:parse-version -DgenerateBackupPoms=false -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} help:evaluate -Dexpression=newVersion -q -DforceStdout)-SNAPSHOT"
-        DOCKER_IMAGE=$(mvn ${MAVEN_CLI_OPTS} help:evaluate -Dexpression=docker.image -q -DforceStdout)
+        CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+        echo CURRENT_VERSION=$CURRENT_VERSION
+        NEXT_VERSION="$(mvn build-helper:parse-version -DgenerateBackupPoms=false -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} help:evaluate -Dexpression=newVersion -q -DforceStdout)-SNAPSHOT"
+        echo NEXT_VERSION=$NEXT_VERSION
+        DOCKER_IMAGE=$(mvn help:evaluate -Dexpression=docker.image -q -DforceStdout)
+        echo DOCKER_IMAGE=$DOCKER_IMAGE
         CURRENT_BRANCH=${GITHUB_REF#refs/heads/}
-        REVISION_BRANCH=$([[ ${CURRENT_BRANCH} != "release" && ${CURRENT_BRANCH} != "main" ]] && echo "-${CURRENT_BRANCH}")
-        REVISION_TYPE=$([[ ${CURRENT_BRANCH} != "release" ]] && echo "-SNAPSHOT")
+        echo CURRENT_BRANCH=$CURRENT_BRANCH
+        REVISION_BRANCH=$(if [[ ${CURRENT_BRANCH} != "release" && ${CURRENT_BRANCH} != "main" ]];then echo "-${CURRENT_BRANCH}"; else echo ""; fi)
+        echo REVISION_BRANCH=$REVISION_BRANCH
+        REVISION_TYPE=$(if [[ ${CURRENT_BRANCH} != "release" ]];then echo "-SNAPSHOT"; fi)
+        echo REVISION_TYPE=$REVISION_TYPE
         DOCKER_TAGS=$(if [[ ${CURRENT_BRANCH} == "release" ]];then echo "${DOCKER_IMAGE}:${CURRENT_VERSION},${DOCKER_IMAGE}:latest"; else echo "${DOCKER_IMAGE}:${CURRENT_VERSION}"; fi)
-        echo $CURRENT_VERSION
-        echo $NEXT_VERSION
-        echo $DOCKER_IMAGE
-        echo $CURRENT_BRANCH
-        echo $REVISION_BRANCH
-        echo $REVISION_TYPE
-        echo $DOCKER_TAGS
+        echo DOCKER_TAGS=$DOCKER_TAGS
         echo ::set-output name=current_version::${CURRENT_VERSION}
         echo ::set-output name=next_version::${NEXT_VERSION}
         echo ::set-output name=current_branch::${CURRENT_BRANCH}
