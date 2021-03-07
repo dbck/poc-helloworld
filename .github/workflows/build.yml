@@ -16,6 +16,8 @@ jobs:
   build:
     name: Build and push docker image
     runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
 
     steps:
     - name: Checkout repository
@@ -59,7 +61,7 @@ jobs:
       if: "contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
       run: mvn ${MAVEN_OPTIONS} deploy
       env:
-        MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
+        MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
         GITHUB_TOKEN: ${{ github.token }}
         OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
@@ -86,7 +88,7 @@ jobs:
         git reset --hard
         git checkout release
       env:
-        MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
+        MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
         CURRENT_VERSION: ${{ steps.prep.outputs.current_version }}
         NEXT_VERSION: ${{ steps.prep.outputs.next_version }}
         GITHUB_TOKEN: ${{ github.token }}
@@ -157,9 +159,21 @@ jobs:
         draft: false
         prerelease: false
         
-#    - name: Quality check with maven and sonar
-#      run: mvn ${MAVEN_OPTIONS} -Pquality verify # Test already run in previous step
-#      env:
-#        MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
-#        GITHUB_TOKEN: ${{ github.token }}
-#        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    - name: Quality check of build with maven and sonar
+      if: "contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
+      run: mvn ${MAVEN_OPTIONS} -Pquality verify # Test already run in previous step
+      env:
+        MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
+        GITHUB_TOKEN: ${{ github.token }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        
+    - name: Quality check of relase with maven and sonar
+      if: "!contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
+      run: |
+        mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${CURRENT_VERSION/-SNAPSHOT/}
+        mvn ${MAVEN_OPTIONS} -Pquality verify # Test already run in previous step
+      env:
+        MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
+        CURRENT_VERSION: ${{ steps.prep.outputs.current_version }}
+        GITHUB_TOKEN: ${{ github.token }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
