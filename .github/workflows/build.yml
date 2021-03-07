@@ -146,16 +146,16 @@ jobs:
     - name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
 
-#    - name: Create Release
-#      if: startsWith(github.ref, 'refs/tags/v')
-#      uses: actions/create-release@latest
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#      with:
-#        tag_name: v${{ steps.prep.outputs.version }}
-#        release_name: ${{ steps.prep.outputs.version }}
-#        draft: false
-#        prerelease: false
+    - name: Create Release
+      if: "!contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
+      uses: actions/create-release@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.prep.outputs.current_version }}
+        release_name: ${{ steps.prep.outputs.current_version }}
+        draft: false
+        prerelease: false
         
 #    - name: Quality check with maven and sonar
 #      run: mvn ${MAVEN_OPTIONS} -Pquality verify # Test already run in previous step
