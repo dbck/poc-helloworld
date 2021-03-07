@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>de.dbck.poc</groupId>
-	<artifactId>poc-helloworldspring</artifactId>
+	<artifactId>poc-helloworld</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>${project.artifactId}</name>
 	<description>Demo project for Spring Boot</description>
