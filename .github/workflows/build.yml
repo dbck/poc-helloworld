@@ -37,25 +37,19 @@ jobs:
       id: prep
       run: |
         CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-        echo $CURRENT_VERSION
+        echo CURRENT_VERSION=$CURRENT_VERSION
         NEXT_VERSION="$(mvn build-helper:parse-version -DgenerateBackupPoms=false -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} help:evaluate -Dexpression=newVersion -q -DforceStdout)-SNAPSHOT"
-        echo $NEXT_VERSION
+        echo NEXT_VERSION=$NEXT_VERSION
         DOCKER_IMAGE=$(mvn help:evaluate -Dexpression=docker.image -q -DforceStdout)
-        echo $DOCKER_IMAGE
+        echo DOCKER_IMAGE=$DOCKER_IMAGE
         CURRENT_BRANCH=${GITHUB_REF#refs/heads/}
-        echo $CURRENT_BRANCH
+        echo CURRENT_BRANCH=$CURRENT_BRANCH
         REVISION_BRANCH=$(if [[ ${CURRENT_BRANCH} != "release" && ${CURRENT_BRANCH} != "main" ]];then echo "-${CURRENT_BRANCH}"; else echo ""; fi)
-        echo $REVISION_BRANCH
+        echo REVISION_BRANCH=$REVISION_BRANCH
         REVISION_TYPE=$(if [[ ${CURRENT_BRANCH} != "release" ]];then echo "-SNAPSHOT"; fi)
-        echo $REVISION_TYPE
+        echo REVISION_TYPE=$REVISION_TYPE
         DOCKER_TAGS=$(if [[ ${CURRENT_BRANCH} == "release" ]];then echo "${DOCKER_IMAGE}:${CURRENT_VERSION},${DOCKER_IMAGE}:latest"; else echo "${DOCKER_IMAGE}:${CURRENT_VERSION}"; fi)
-        echo $CURRENT_VERSION
-        echo $NEXT_VERSION
-        echo $DOCKER_IMAGE
-        echo $CURRENT_BRANCH
-        echo $REVISION_BRANCH
-        echo $REVISION_TYPE
-        echo $DOCKER_TAGS
+        echo DOCKER_TAGS=$DOCKER_TAGS
         echo ::set-output name=current_version::${CURRENT_VERSION}
         echo ::set-output name=next_version::${NEXT_VERSION}
         echo ::set-output name=current_branch::${CURRENT_BRANCH}
