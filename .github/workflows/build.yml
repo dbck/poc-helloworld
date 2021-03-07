@@ -8,7 +8,7 @@ on:
       - '*'         # matches every branch that doesn't contain a '/'
       - '*/*'       # matches every branch containing a single '/'
       - '**'        # matches every branch
-      - '!release'  # excludes release branch
+#      - '!release'  # excludes release branch
 #    schedule:
 #      - cron: "0 22 * * *"
 
@@ -56,7 +56,7 @@ jobs:
         echo ::set-output name=docker_tags::${DOCKER_TAGS}
 
     - name: Build, test and deploy a snapshot with maven
-      if: "contains(${{ steps.prep.outputs.revision_type }}, 'SNAPSHOT')"
+      if: "contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
       run: mvn ${MAVEN_OPTIONS} deploy
       env:
         MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
@@ -66,7 +66,7 @@ jobs:
         OSSRH_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
 
     - name: Build, test and deploy a release with maven
-      if: "!contains(${{ steps.prep.outputs.revision_type }}, 'SNAPSHOT')"
+      if: "!contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
       run: |
         # Configure git
         git config user.name github-actions
