@@ -36,9 +36,9 @@ jobs:
     - name: Prepare version and docker tags
       id: prep
       run: |
-        CURRENT_VERSION="$(mvn ${MAVEN_OPTIONS} help:evaluate -Dexpression=project.version -q -DforceStdout)"
-        NEXT_VERSION="$(mvn ${MAVEN_OPTIONS} build-helper:parse-version -DgenerateBackupPoms=false -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} help:evaluate -Dexpression=newVersion -q -DforceStdout)-SNAPSHOT"
-        DOCKER_IMAGE=$(mvn ${MAVEN_OPTIONS} help:evaluate -Dexpression=docker.image -q -DforceStdout)
+        CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+        NEXT_VERSION="$(mvn build-helper:parse-version -DgenerateBackupPoms=false -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} help:evaluate -Dexpression=newVersion -q -DforceStdout)-SNAPSHOT"
+        DOCKER_IMAGE=$(mvn help:evaluate -Dexpression=docker.image -q -DforceStdout)
         CURRENT_BRANCH=${GITHUB_REF#refs/heads/}
         REVISION_BRANCH=$([[ ${CURRENT_BRANCH} != "release" && ${CURRENT_BRANCH} != "main" ]] && echo "-${CURRENT_BRANCH}")
         REVISION_TYPE=$([[ ${CURRENT_BRANCH} != "release" ]] && echo "-SNAPSHOT")
@@ -56,8 +56,6 @@ jobs:
         echo ::set-output name=revision_branch::${REVISION_BRANCH}
         echo ::set-output name=revision_type::${REVISION_TYPE}
         echo ::set-output name=docker_tags::${DOCKER_TAGS}
-      env:
-        MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
 
     - name: Build, test and deploy a snapshot with maven
       if: "contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
