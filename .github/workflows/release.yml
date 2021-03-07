@@ -32,7 +32,7 @@ jobs:
         CURRENT_BRANCH=${GITHUB_REF#refs/heads/}
         REVISION_BRANCH=$([[ ${CURRENT_BRANCH} != "release" && ${CURRENT_BRANCH} != "main" ]] && echo "-${CURRENT_BRANCH}")
         REVISION_TYPE=$([[ ${CURRENT_BRANCH} != "release" ]] && echo "-SNAPSHOT")
-        DOCKER_TAGS="$${DOCKER_IMAGE}:${CURRENT_VERSION},${DOCKER_IMAGE}:latest,${DOCKER_IMAGE}:${{ env.CI_SHA_SHORT }}"
+        DOCKER_TAGS="${DOCKER_IMAGE}:${CURRENT_VERSION},${DOCKER_IMAGE}:latest,${DOCKER_IMAGE}:${{ env.CI_SHA_SHORT }}"
         echo ::set-output name=current_version::${CURRENT_VERSION}
         echo ::set-output name=next_version::${NEXT_VERSION}
         echo ::set-output name=current_branch::${CURRENT_BRANCH}
@@ -122,12 +122,12 @@ jobs:
     - name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
 
-    - name: Quality check with maven and sonar
-      run: |
-        mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${CURRENT_VERSION/-SNAPSHOT/}
-        mvn ${MAVEN_OPTIONS} -Pquality verify # Test already run in previous step
-      env:
-        MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
-        CURRENT_VERSION: ${{ steps.prep.outputs.current_version }}
-        GITHUB_TOKEN: ${{ github.token }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#    - name: Quality check with maven and sonar
+#      run: |
+#        mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${CURRENT_VERSION/-SNAPSHOT/}
+#        mvn ${MAVEN_OPTIONS} -Pquality verify # Test already run in previous step
+#      env:
+#        MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
+#        CURRENT_VERSION: ${{ steps.prep.outputs.current_version }}
+#        GITHUB_TOKEN: ${{ github.token }}
+#        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
