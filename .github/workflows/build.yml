@@ -40,7 +40,7 @@ jobs:
         CURRENT_BRANCH=${GITHUB_REF#refs/heads/}
         REVISION_BRANCH=$([[ ${CURRENT_BRANCH} != "release" && ${CURRENT_BRANCH} != "main" ]] && echo "-${CURRENT_BRANCH}")
         REVISION_TYPE=$([[ ${CURRENT_BRANCH} != "release" ]] && echo "-SNAPSHOT")
-        DOCKER_TAGS="${DOCKER_IMAGE}:${CURRENT_VERSION}"
+        DOCKER_TAGS=$(if [[ ${CURRENT_BRANCH} == "release" ]];then echo "${DOCKER_IMAGE}:${CURRENT_VERSION},${DOCKER_IMAGE}:latest"; else echo "${DOCKER_IMAGE}:${CURRENT_VERSION}"; fi)
         echo $CURRENT_VERSION
         echo $NEXT_VERSION
         echo $DOCKER_IMAGE
@@ -48,8 +48,6 @@ jobs:
         echo $REVISION_BRANCH
         echo $REVISION_TYPE
         echo $DOCKER_TAGS
-        #Release versions
-        #DOCKER_TAGS="$${DOCKER_IMAGE}:${CURRENT_VERSION},${DOCKER_IMAGE}:latest,${DOCKER_IMAGE}:${{ env.CI_SHA_SHORT }}"
         echo ::set-output name=current_version::${CURRENT_VERSION}
         echo ::set-output name=next_version::${NEXT_VERSION}
         echo ::set-output name=current_branch::${CURRENT_BRANCH}
@@ -57,10 +55,40 @@ jobs:
         echo ::set-output name=revision_type::${REVISION_TYPE}
         echo ::set-output name=docker_tags::${DOCKER_TAGS}
 
-    - name: Build, test and deploy with maven
+    - name: Build, test and deploy a snapshot with maven
+      if: "contains(${{ steps.prep.outputs.revision_type }}, 'SNAPSHOT')"
       run: mvn ${MAVEN_OPTIONS} deploy
       env:
         MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
+        GITHUB_TOKEN: ${{ github.token }}
+        OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        OSSRH_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
+
+    - name: Build, test and deploy a release with maven
+      if: "!contains(${{ steps.prep.outputs.revision_type }}, 'SNAPSHOT')"
+      run: |
+        # Configure git
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        # Build and deploy
+        mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${CURRENT_VERSION/-SNAPSHOT/}
+        mvn ${MAVEN_OPTIONS} -Dusername=${GITHUB_TOKEN} -Prelease clean deploy
+        # Increment revision of develop branch based on main revision value
+        git reset --hard origin/release
+        git fetch --all --tags
+        git checkout main
+        git reset --hard origin/main
+        git pull --all --ff-only
+        mvn ${MAVEN_OPTIONS} -DgenerateBackupPoms=false versions:set -DnewVersion=${NEXT_VERSION}
+        #mvn ${MAVEN_OPTIONS} compile #Only needed if eg. README will be generated which includes the version number 
+        git commit -am "Updated revision to ${NEXT_VERSION}. Prepared for next development iteration." && git push
+        git reset --hard
+        git checkout release
+      env:
+        MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
+        CURRENT_VERSION: ${{ steps.prep.outputs.current_version }}
+        NEXT_VERSION: ${{ steps.prep.outputs.next_version }}
         GITHUB_TOKEN: ${{ github.token }}
         OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
