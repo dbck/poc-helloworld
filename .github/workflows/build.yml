@@ -46,7 +46,7 @@ jobs:
         echo $CURRENT_BRANCH
         REVISION_BRANCH=$(if [[ ${CURRENT_BRANCH} != "release" && ${CURRENT_BRANCH} != "main" ]];then echo "-${CURRENT_BRANCH}"; else echo ""; fi)
         echo $REVISION_BRANCH
-        REVISION_TYPE=$([[ ${CURRENT_BRANCH} != "release" ]] && echo "-SNAPSHOT")
+        REVISION_TYPE=$(if [[ ${CURRENT_BRANCH} != "release" ]];then echo "-SNAPSHOT"; fi)
         echo $REVISION_TYPE
         DOCKER_TAGS=$(if [[ ${CURRENT_BRANCH} == "release" ]];then echo "${DOCKER_IMAGE}:${CURRENT_VERSION},${DOCKER_IMAGE}:latest"; else echo "${DOCKER_IMAGE}:${CURRENT_VERSION}"; fi)
         echo $CURRENT_VERSION
