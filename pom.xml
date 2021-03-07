@@ -17,6 +17,7 @@
   
 	<properties>
 		<java.version>11</java.version>
+    <docker.image>dbck/${project.artifactId}</docker.image>
 	</properties>
   
   <scm>
