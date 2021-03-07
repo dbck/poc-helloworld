@@ -17,7 +17,7 @@ jobs:
     name: Build and push docker image
     runs-on: ubuntu-latest
     env:
-      MAVEN_OPTIONS: --quiet --batch-mode --no-transfer-progress
+      MAVEN_OPTIONS: "--quiet --batch-mode --no-transfer-progress"
 
     steps:
     - name: Checkout repository
