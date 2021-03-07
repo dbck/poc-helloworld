@@ -1,6 +1,6 @@
 # Most of this workflow is based on this blog post: https://bee42.com/de/blog/tutorials/dockerized-the-apple-silicon/
 
-name: Snapshot
+name: Build
 
 on:
   push:
