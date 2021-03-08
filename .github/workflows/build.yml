@@ -98,7 +98,8 @@ jobs:
 
     - name: Unpack jar
       run: |
-        mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+        PROJECT_BUILD_FINAL_NAME="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+        mkdir -p target/dependency && (cd target/dependency; jar -xf ../${PROJECT_BUILD_FINAL_NAME}.jar)
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
