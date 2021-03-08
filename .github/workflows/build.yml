@@ -38,8 +38,12 @@ jobs:
       run: |
         CURRENT_VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
         echo CURRENT_VERSION=$CURRENT_VERSION
-        NEXT_VERSION="$(mvn build-helper:parse-version -DgenerateBackupPoms=false -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} help:evaluate -Dexpression=newVersion -q -DforceStdout)-SNAPSHOT"
-        echo NEXT_VERSION=$NEXT_VERSION
+        SNAPSHOT_VERSION=${CURRENT_VERSION}
+        echo SNAPSHOT_VERSION=$SNAPSHOT_VERSION
+        RELEASE_VERSION=${CURRENT_VERSION/-SNAPSHOT/}
+        echo RELEASE_VERSION=$RELEASE_VERSION
+        NEXT_SNAPSHOT_VERSION="$(mvn build-helper:parse-version -DgenerateBackupPoms=false -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} help:evaluate -Dexpression=newVersion -q -DforceStdout)-SNAPSHOT"
+        echo NEXT_SNAPSHOT_VERSION=$NEXT_SNAPSHOT_VERSION
         DOCKER_IMAGE=$(mvn help:evaluate -Dexpression=docker.image -q -DforceStdout)
         echo DOCKER_IMAGE=$DOCKER_IMAGE
         CURRENT_BRANCH=${GITHUB_REF#refs/heads/}
@@ -48,15 +52,17 @@ jobs:
         echo REVISION_BRANCH=$REVISION_BRANCH
         REVISION_TYPE=$(if [[ ${CURRENT_BRANCH} != "release" ]];then echo "-SNAPSHOT"; fi)
         echo REVISION_TYPE=$REVISION_TYPE
-        DOCKER_TAGS=$(if [[ ${CURRENT_BRANCH} == "release" ]];then echo "${DOCKER_IMAGE}:${CURRENT_VERSION/-SNAPSHOT/},${DOCKER_IMAGE}:latest"; else echo "${DOCKER_IMAGE}:${CURRENT_VERSION}"; fi)
+        DOCKER_TAGS=$(if [[ ${CURRENT_BRANCH} == "release" ]];then echo "${DOCKER_IMAGE}:${RELEASE_VERSION},${DOCKER_IMAGE}:latest"; else echo "${DOCKER_IMAGE}:${SNAPSHOT_VERSION}"; fi)
         echo DOCKER_TAGS=$DOCKER_TAGS
         echo ::set-output name=current_version::${CURRENT_VERSION}
-        echo ::set-output name=next_version::${NEXT_VERSION}
+        echo ::set-output name=snapshot_version::${SNAPSHOT_VERSION}
+        echo ::set-output name=release_version::${RELEASE_VERSION}
+        echo ::set-output name=next_snapshot_version::${NEXT_SNAPSHOT_VERSION}
         echo ::set-output name=current_branch::${CURRENT_BRANCH}
         echo ::set-output name=revision_branch::${REVISION_BRANCH}
         echo ::set-output name=revision_type::${REVISION_TYPE}
         echo ::set-output name=docker_tags::${DOCKER_TAGS}
-        echo ::set-output name=release_version::${CURRENT_VERSION/-SNAPSHOT/}
+
 
     - name: Build, test and deploy a snapshot with maven
       if: "contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
@@ -79,7 +85,7 @@ jobs:
         git config user.name github-actions
         git config user.email github-actions@github.com
         # Build and deploy
-        mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${CURRENT_VERSION/-SNAPSHOT/}
+        mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${RELEASE_VERSION}
         mvn ${MAVEN_OPTIONS} -Dusername=${GITHUB_TOKEN} -Prelease clean deploy
         # Unpack jar for docker image build
         PROJECT_BUILD_FINAL_NAME=$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
@@ -90,15 +96,15 @@ jobs:
         git checkout main
         git reset --hard origin/main
         git pull --all --ff-only
-        mvn ${MAVEN_OPTIONS} -DgenerateBackupPoms=false versions:set -DnewVersion=${NEXT_VERSION}
+        mvn ${MAVEN_OPTIONS} -DgenerateBackupPoms=false versions:set -DnewVersion=${NEXT_SHAPSHOT_VERSION}
         #mvn ${MAVEN_OPTIONS} compile #Only needed if eg. README will be generated which includes the version number 
-        git commit -am "Updated revision to ${NEXT_VERSION}. Prepared for next development iteration." && git push
+        git commit -am "Updated revision to ${NEXT_SHAPSHOT_VERSION}. Prepared for next development iteration." && git push
         git reset --hard
         git checkout release
       env:
         MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
-        CURRENT_VERSION: ${{ steps.prep.outputs.current_version }}
-        NEXT_VERSION: ${{ steps.prep.outputs.next_version }}
+        RELEASE_VERSION: ${{ steps.prep.outputs.release_version }}
+        NEXT_SHAPSHOT_VERSION: ${{ steps.prep.outputs.next_snapshot_version }}
         GITHUB_TOKEN: ${{ github.token }}
         OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
@@ -158,7 +164,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: v${{ steps.prep.outputs.release_version }}
+        #tag_name: v${{ steps.prep.outputs.release_version }}
         release_name: ${{ steps.prep.outputs.release_version }}
         draft: false
         prerelease: false
@@ -174,10 +180,10 @@ jobs:
     - name: Quality check of relase with maven and sonar
       if: "!contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
       run: |
-        mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${CURRENT_VERSION/-SNAPSHOT/}
+        mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${RELEASE_VERSION}
         mvn ${MAVEN_OPTIONS} -Pquality verify # Test already run in previous step
       env:
         MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
-        CURRENT_VERSION: ${{ steps.prep.outputs.current_version }}
+        RELEASE_VERSION: ${{ steps.prep.outputs.release_version }}
         GITHUB_TOKEN: ${{ github.token }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
