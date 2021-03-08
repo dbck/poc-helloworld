@@ -62,7 +62,8 @@ jobs:
       run: |
         mvn ${MAVEN_OPTIONS} deploy
         # Unpack jar
-        mkdir -p target/dependency && (cd target/dependency; jar -xf ../$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout).jar)
+        PROJECT_BUILD_FINAL_NAME=$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+        mkdir -p target/dependency && (cd target/dependency; jar -xf ../${PROJECT_BUILD_FINAL_NAME}.jar)
       env:
         MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
         GITHUB_TOKEN: ${{ github.token }}
@@ -80,7 +81,8 @@ jobs:
         mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${CURRENT_VERSION/-SNAPSHOT/}
         mvn ${MAVEN_OPTIONS} -Dusername=${GITHUB_TOKEN} -Prelease clean deploy
         # Unpack jar
-        mkdir -p target/dependency && (cd target/dependency; jar -xf ../$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout).jar)
+        PROJECT_BUILD_FINAL_NAME=$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+        mkdir -p target/dependency && (cd target/dependency; jar -xf ../${PROJECT_BUILD_FINAL_NAME}.jar)
         # Increment revision of develop branch based on main revision value
         git reset --hard origin/release
         git fetch --all --tags
