@@ -63,7 +63,6 @@ jobs:
         echo ::set-output name=revision_type::${REVISION_TYPE}
         echo ::set-output name=docker_tags::${DOCKER_TAGS}
 
-
     - name: Build, test and deploy a snapshot with maven
       if: "contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
       run: |
@@ -164,7 +163,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        #tag_name: v${{ steps.prep.outputs.release_version }}
+        tag_name: ${{ steps.prep.outputs.release_version }}
         release_name: ${{ steps.prep.outputs.release_version }}
         draft: false
         prerelease: false
