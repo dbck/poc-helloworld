@@ -59,7 +59,10 @@ jobs:
 
     - name: Build, test and deploy a snapshot with maven
       if: "contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
-      run: mvn ${MAVEN_OPTIONS} deploy
+      run: |
+        mvn ${MAVEN_OPTIONS} deploy
+        # Unpack jar
+        mkdir -p target/dependency && (cd target/dependency; jar -xf ../$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout).jar)
       env:
         MAVEN_OPTIONS: ${{ env.MAVEN_OPTIONS }}
         GITHUB_TOKEN: ${{ github.token }}
@@ -76,6 +79,8 @@ jobs:
         # Build and deploy
         mvn ${MAVEN_OPTIONS} versions:set -DnewVersion=${CURRENT_VERSION/-SNAPSHOT/}
         mvn ${MAVEN_OPTIONS} -Dusername=${GITHUB_TOKEN} -Prelease clean deploy
+        # Unpack jar
+        mkdir -p target/dependency && (cd target/dependency; jar -xf ../$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout).jar)
         # Increment revision of develop branch based on main revision value
         git reset --hard origin/release
         git fetch --all --tags
@@ -95,11 +100,6 @@ jobs:
         OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
         OSSRH_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
-
-    - name: Unpack jar
-      run: |
-        PROJECT_BUILD_FINAL_NAME="$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)"
-        mkdir -p target/dependency && (cd target/dependency; jar -xf ../${PROJECT_BUILD_FINAL_NAME}.jar)
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
