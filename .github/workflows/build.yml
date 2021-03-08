@@ -98,7 +98,7 @@ jobs:
 
     - name: Unpack jar
       run: |
-        PROJECT_BUILD_FINAL_NAME="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+        PROJECT_BUILD_FINAL_NAME="$(mvn help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)"
         mkdir -p target/dependency && (cd target/dependency; jar -xf ../${PROJECT_BUILD_FINAL_NAME}.jar)
 
     - name: Set up QEMU
