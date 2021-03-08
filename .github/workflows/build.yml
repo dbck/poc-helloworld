@@ -48,7 +48,7 @@ jobs:
         echo REVISION_BRANCH=$REVISION_BRANCH
         REVISION_TYPE=$(if [[ ${CURRENT_BRANCH} != "release" ]];then echo "-SNAPSHOT"; fi)
         echo REVISION_TYPE=$REVISION_TYPE
-        DOCKER_TAGS=$(if [[ ${CURRENT_BRANCH} == "release" ]];then echo "${DOCKER_IMAGE}:${CURRENT_VERSION},${DOCKER_IMAGE}:latest"; else echo "${DOCKER_IMAGE}:${CURRENT_VERSION}"; fi)
+        DOCKER_TAGS=$(if [[ ${CURRENT_BRANCH} == "release" ]];then echo "${DOCKER_IMAGE}:${CURRENT_VERSION/-SNAPSHOT/},${DOCKER_IMAGE}:latest"; else echo "${DOCKER_IMAGE}:${CURRENT_VERSION}"; fi)
         echo DOCKER_TAGS=$DOCKER_TAGS
         echo ::set-output name=current_version::${CURRENT_VERSION}
         echo ::set-output name=next_version::${NEXT_VERSION}
@@ -56,6 +56,7 @@ jobs:
         echo ::set-output name=revision_branch::${REVISION_BRANCH}
         echo ::set-output name=revision_type::${REVISION_TYPE}
         echo ::set-output name=docker_tags::${DOCKER_TAGS}
+        echo ::set-output name=release_version::${CURRENT_VERSION/-SNAPSHOT/}
 
     - name: Build, test and deploy a snapshot with maven
       if: "contains(steps.prep.outputs.revision_type, 'SNAPSHOT')"
@@ -157,8 +158,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: v${{ steps.prep.outputs.current_version }}
-        release_name: ${{ steps.prep.outputs.current_version }}
+        tag_name: v${{ steps.prep.outputs.release_version }}
+        release_name: ${{ steps.prep.outputs.release_version }}
         draft: false
         prerelease: false
         
